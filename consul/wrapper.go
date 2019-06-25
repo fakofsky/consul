@@ -31,6 +31,9 @@ type wrapper struct {
 }
 
 func (w *wrapper) StartMetrics(monitorPort int, servicePromID string) error {
+	if !w.isUseConsul {
+		return nil
+	}
 	go func() {
 		err := startMetricServer(w.serviceName, monitorPort)
 		if err != nil {
@@ -41,18 +44,16 @@ func (w *wrapper) StartMetrics(monitorPort int, servicePromID string) error {
 	w.monitorPort = monitorPort
 	w.servicePromID = servicePromID
 
-	if w.isUseConsul {
-		promService := Service{
-			Name: w.serviceName,
-			ID:   servicePromID,
-			Port: monitorPort,
-			Tags: []string{"prom"},
-		}
+	promService := Service{
+		Name: w.serviceName,
+		ID:   servicePromID,
+		Port: monitorPort,
+		Tags: []string{"prom"},
+	}
 
-		err := w.consulBroker.Register(promService)
-		if err != nil {
-			return fmt.Errorf("can not register service %s in consul %v", promService.ID, err)
-		}
+	err := w.consulBroker.Register(promService)
+	if err != nil {
+		return fmt.Errorf("can not register service %s in consul %v", promService.ID, err)
 	}
 
 	return nil
